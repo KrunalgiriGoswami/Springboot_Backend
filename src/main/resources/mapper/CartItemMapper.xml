@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.example.rbac.mapper.CartItemMapper">
+    <resultMap id="CartItemResultMap" type="com.example.rbac.entity.CartItem">
+        <id property="id" column="id"/>
+        <result property="userId" column="user_id"/>
+        <result property="productId" column="product_id"/>
+        <result property="quantity" column="quantity"/>
+        <result property="createdAt" column="created_at"/>
+        <result property="updatedAt" column="updated_at"/>
+    </resultMap>
+
+    <insert id="insert" parameterType="com.example.rbac.entity.CartItem">
+        INSERT INTO cart_items (user_id, product_id, quantity)
+        VALUES (#{userId}, #{productId}, #{quantity})
+        <selectKey keyProperty="id" resultType="long" order="AFTER">
+            SELECT LAST_INSERT_ID()
+        </selectKey>
+    </insert>
+
+    <select id="findByUserIdAndProductId" resultMap="CartItemResultMap">
+        SELECT * FROM cart_items
+        WHERE user_id = #{userId} AND product_id = #{productId}
+    </select>
+
+    <select id="findByUserId" resultMap="CartItemResultMap">
+        SELECT * FROM cart_items
+        WHERE user_id = #{userId}
+    </select>
+
+    <update id="update" parameterType="com.example.rbac.entity.CartItem">
+        UPDATE cart_items
+        SET quantity = #{quantity}
+        WHERE user_id = #{userId} AND product_id = #{productId}
+    </update>
+
+    <delete id="deleteByUserIdAndProductId">
+        DELETE FROM cart_items
+        WHERE user_id = #{userId} AND product_id = #{productId}
+    </delete>
+
+    <delete id="deleteByUserId">
+        DELETE FROM cart_items
+        WHERE user_id = #{userId}
+    </delete>
+</mapper>
