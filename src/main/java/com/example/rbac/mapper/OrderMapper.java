@@ -2,6 +2,7 @@ package com.example.rbac.mapper;
 
 import com.example.rbac.entity.Order;
 import com.example.rbac.entity.OrderItem;
+import com.example.rbac.entity.OrderStatusHistory;
 import org.apache.ibatis.annotations.Mapper;
 
 import java.util.List;
@@ -19,5 +20,9 @@ public interface OrderMapper {
 
     void updateOrderStatus(Map<String, Object> params);
 
-    Order findOrderById(Long orderId); // Add this method
+    Order findOrderById(Long orderId);
+
+    void insertOrderStatusHistory(OrderStatusHistory history);
+
+    List<OrderStatusHistory> findStatusHistoryByOrderId(Long orderId);
 }

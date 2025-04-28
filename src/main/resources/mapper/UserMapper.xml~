@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.example.rbac.mapper.UserMapper">
+    <resultMap id="UserResultMap" type="com.example.rbac.entity.User">
+        <id property="id" column="id"/>
+        <result property="username" column="username"/>
+        <result property="password" column="password"/>
+        <result property="email" column="email"/>
+        <collection property="roles" ofType="com.example.rbac.entity.Role">
+            <id property="id" column="role_id"/>
+            <result property="name" column="role_name"/>
+        </collection>
+    </resultMap>
+
+    <select id="findByUsername" parameterType="string" resultMap="UserResultMap">
+        SELECT u.id, u.username, u.password, u.email, r.id as role_id, r.name as role_name
+        FROM users u
+        LEFT JOIN user_roles ur ON u.id = ur.user_id
+        LEFT JOIN roles r ON ur.role_id = r.id
+        WHERE u.username = #{username}
+    </select>
+
+    <insert id="insertUser" parameterType="com.example.rbac.entity.User" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO users (username, password, email)
+        VALUES (#{username}, #{password}, #{email})
+    </insert>
+
+    <insert id="insertUserRole">
+        INSERT INTO user_roles (user_id, role_id)
+        VALUES (#{userId}, #{roleId})
+    </insert>
+
+    <select id="findRoleIdByName" parameterType="string" resultType="long">
+        SELECT id FROM roles WHERE name = #{roleName}
+    </select>
+</mapper>

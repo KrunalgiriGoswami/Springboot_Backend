@@ -2,6 +2,7 @@ package com.example.rbac.service;
 
 import com.example.rbac.entity.Order;
 import com.example.rbac.entity.OrderItem;
+import com.example.rbac.entity.OrderStatusHistory;
 import com.example.rbac.mapper.OrderMapper;
 import org.springframework.stereotype.Service;
 
@@ -23,17 +24,15 @@ public class OrderService {
         order.setUserId(userId);
         order.setTotalPrice(totalPrice);
         order.setCreatedAt(LocalDateTime.now());
-        order.setStatus("Pending"); // Set initial status
-        order.setItems(items);
-
-        // Insert the order
+        order.setStatus("ORDER_PLACED");
         orderMapper.insertOrder(order);
 
-        // Associate items with the order and insert them
         for (OrderItem item : items) {
             item.setOrder(order);
             orderMapper.insertOrderItem(item);
         }
+
+        orderMapper.insertOrderStatusHistory(new OrderStatusHistory(order.getId(), "ORDER_PLACED"));
     }
 
     public List<Order> findOrdersByUserId(Long userId) {
@@ -49,9 +48,16 @@ public class OrderService {
         params.put("orderId", orderId);
         params.put("status", status);
         orderMapper.updateOrderStatus(params);
+
+        orderMapper.insertOrderStatusHistory(new OrderStatusHistory(orderId, status));
     }
 
     public Order findOrderById(Long orderId) {
-        return orderMapper.findOrderById(orderId); // Add this method
+        return orderMapper.findOrderById(orderId);
+    }
+
+    // New method to fetch status history
+    public List<OrderStatusHistory> findStatusHistoryByOrderId(Long orderId) {
+        return orderMapper.findStatusHistoryByOrderId(orderId);
     }
 }

@@ -2,6 +2,7 @@ package com.example.rbac.controller;
 
 import com.example.rbac.entity.Order;
 import com.example.rbac.entity.OrderItem;
+import com.example.rbac.entity.OrderStatusHistory;
 import com.example.rbac.service.OrderService;
 import com.example.rbac.service.UserService;
 import org.springframework.http.ResponseEntity;
@@ -61,7 +62,8 @@ public class OrderController {
             Long userId = getUserIdByUsername(username);
             System.out.println("User ID: " + userId);
             List<Order> orders = orderService.findOrdersByUserId(userId);
-            System.out.println("Orders fetched: " + orders.size());
+            // Attach status history to each order
+            orders.forEach(order -> order.setStatusHistory(orderService.findStatusHistoryByOrderId(order.getId())));
             return ResponseEntity.ok(orders);
         } catch (Exception e) {
             System.out.println("Error fetching orders: " + e.getMessage());
@@ -79,7 +81,8 @@ public class OrderController {
                 return ResponseEntity.status(403).body(null);
             }
             List<Order> orders = orderService.findAllOrders();
-            System.out.println("All orders fetched: " + orders.size());
+            // Attach status history to each order
+            orders.forEach(order -> order.setStatusHistory(orderService.findStatusHistoryByOrderId(order.getId())));
             return ResponseEntity.ok(orders);
         } catch (Exception e) {
             System.out.println("Error fetching all orders: " + e.getMessage());
@@ -97,7 +100,7 @@ public class OrderController {
                 return ResponseEntity.status(403).body("Access Denied: Authentication required");
             }
             String username = authentication.getName();
-            Long userId = getUserIdByUsername(username); // Ensure this checks for admin role
+            Long userId = getUserIdByUsername(username);
             Order order = orderService.findOrderById(orderId);
             if (order == null) {
                 return ResponseEntity.status(404).body("Order not found");
@@ -153,7 +156,7 @@ public class OrderController {
             if (order == null) {
                 return ResponseEntity.status(404).body("Order not found");
             }
-
+            // Add deletion logic here if needed
             return ResponseEntity.ok("Order removed successfully");
         } catch (Exception e) {
             return ResponseEntity.status(500).body("Failed to remove order: " + e.getMessage());
