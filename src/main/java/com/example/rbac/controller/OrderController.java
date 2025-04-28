@@ -3,6 +3,7 @@ package com.example.rbac.controller;
 import com.example.rbac.entity.Order;
 import com.example.rbac.entity.OrderItem;
 import com.example.rbac.entity.OrderStatusHistory;
+import com.example.rbac.entity.ShippingAddress;
 import com.example.rbac.service.OrderService;
 import com.example.rbac.service.UserService;
 import org.springframework.http.ResponseEntity;
@@ -39,10 +40,21 @@ public class OrderController {
                 item.setProductId(Long.valueOf(itemData.get("productId").toString()));
                 item.setQuantity(Integer.valueOf(itemData.get("quantity").toString()));
                 item.setPrice(Double.valueOf(itemData.get("price").toString()));
+                item.setImageUrl(itemData.get("imageUrl") != null ? itemData.get("imageUrl").toString() : null);
                 return item;
             }).collect(Collectors.toList());
 
-            orderService.createOrder(userId, totalPrice, items);
+            // Extract and handle shipping address with null checks
+            Map<String, String> shippingData = (Map<String, String>) orderData.get("shippingAddress");
+            ShippingAddress shippingAddress = new ShippingAddress(
+                    shippingData != null ? shippingData.getOrDefault("street", "N/A") : "N/A",
+                    shippingData != null ? shippingData.getOrDefault("city", "N/A") : "N/A",
+                    shippingData != null ? shippingData.getOrDefault("state", "N/A") : "N/A",
+                    shippingData != null ? shippingData.getOrDefault("postalCode", "N/A") : "N/A",
+                    shippingData != null ? shippingData.getOrDefault("country", "N/A") : "N/A"
+            );
+
+            orderService.createOrder(userId, totalPrice, items, shippingAddress);
             return ResponseEntity.ok("Order created successfully");
         } catch (Exception e) {
             return ResponseEntity.status(500).body("Failed to create order: " + e.getMessage());
@@ -60,9 +72,8 @@ public class OrderController {
             String username = authentication.getName();
             System.out.println("Username from authentication: " + username);
             Long userId = getUserIdByUsername(username);
-            System.out.println("User ID: " + userId);
+            System.out.println("User Id: " + userId);
             List<Order> orders = orderService.findOrdersByUserId(userId);
-            // Attach status history to each order
             orders.forEach(order -> order.setStatusHistory(orderService.findStatusHistoryByOrderId(order.getId())));
             return ResponseEntity.ok(orders);
         } catch (Exception e) {
@@ -81,7 +92,6 @@ public class OrderController {
                 return ResponseEntity.status(403).body(null);
             }
             List<Order> orders = orderService.findAllOrders();
-            // Attach status history to each order
             orders.forEach(order -> order.setStatusHistory(orderService.findStatusHistoryByOrderId(order.getId())));
             return ResponseEntity.ok(orders);
         } catch (Exception e) {
@@ -148,18 +158,26 @@ public class OrderController {
             @PathVariable Long orderId,
             Authentication authentication) {
         try {
-            if (authentication == null || !authentication.getAuthorities().stream()
-                    .anyMatch(auth -> auth.getAuthority().equals("ROLE_ADMIN"))) {
-                return ResponseEntity.status(403).body("Access Denied: Admin role required");
+            if (authentication == null) {
+                return ResponseEntity.status(403).body("Access Denied: Authentication required");
             }
+            String username = authentication.getName();
+            Long userId = getUserIdByUsername(username);
             Order order = orderService.findOrderById(orderId);
             if (order == null) {
                 return ResponseEntity.status(404).body("Order not found");
             }
-            // Add deletion logic here if needed
-            return ResponseEntity.ok("Order removed successfully");
+            if (!order.getUserId().equals(userId)) {
+                return ResponseEntity.status(403).body("Access Denied: Not your order");
+            }
+            // Allow deletion for both DELIVERED and CANCELLED orders
+            if (!order.getStatus().equals("DELIVERED") && !order.getStatus().equals("CANCELLED")) {
+                return ResponseEntity.status(400).body("Only delivered or cancelled orders can be deleted");
+            }
+            orderService.deleteOrder(orderId);
+            return ResponseEntity.ok("Order deleted successfully");
         } catch (Exception e) {
-            return ResponseEntity.status(500).body("Failed to remove order: " + e.getMessage());
+            return ResponseEntity.status(500).body("Failed to delete order: " + e.getMessage());
         }
     }
 

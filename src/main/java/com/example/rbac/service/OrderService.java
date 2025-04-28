@@ -3,8 +3,11 @@ package com.example.rbac.service;
 import com.example.rbac.entity.Order;
 import com.example.rbac.entity.OrderItem;
 import com.example.rbac.entity.OrderStatusHistory;
+
+import com.example.rbac.entity.ShippingAddress;
 import com.example.rbac.mapper.OrderMapper;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.HashMap;
@@ -19,12 +22,13 @@ public class OrderService {
         this.orderMapper = orderMapper;
     }
 
-    public void createOrder(Long userId, Double totalPrice, List<OrderItem> items) {
+    public void createOrder(Long userId, Double totalPrice, List<OrderItem> items, ShippingAddress shippingAddress) {
         Order order = new Order();
         order.setUserId(userId);
         order.setTotalPrice(totalPrice);
         order.setCreatedAt(LocalDateTime.now());
         order.setStatus("ORDER_PLACED");
+        order.setShippingAddress(shippingAddress);
         orderMapper.insertOrder(order);
 
         for (OrderItem item : items) {
@@ -56,8 +60,14 @@ public class OrderService {
         return orderMapper.findOrderById(orderId);
     }
 
-    // New method to fetch status history
     public List<OrderStatusHistory> findStatusHistoryByOrderId(Long orderId) {
         return orderMapper.findStatusHistoryByOrderId(orderId);
+    }
+
+    @Transactional
+    public void deleteOrder(Long orderId) {
+        orderMapper.deleteOrderStatusHistory(orderId);
+        orderMapper.deleteOrderItems(orderId);
+        orderMapper.deleteOrder(orderId);
     }
 }
